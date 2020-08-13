@@ -1,8 +1,21 @@
 FROM openjdk:8-jdk-stretch
 
+# Install latest git release, since stretch installs 2.11.0 which is from 2016.
 # Install git lfs on Debian stretch per https://github.com/git-lfs/git-lfs/wiki/Installation#debian-and-ubuntu
 # Avoid JENKINS-59569 - git LFS 2.7.1 fails clone with reference repository
-RUN apt-get update && apt-get upgrade -y && apt-get install -y git curl && curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash && apt-get install -y git-lfs && git lfs install && rm -rf /var/lib/apt/lists/*
+RUN set -eux \
+  && apt-get update \
+  && apt-get upgrade -y \
+  && apt-get install -y software-properties-common \
+  && add-apt-repository -y ppa:git-core/ppa \
+  && apt-key adv --keyserver keyserver.ubuntu.com --recv-keys A1715D88E1DF1F24 \
+  && sed -i -e 's|groovy|xenial|' /etc/apt/sources.list.d/git-core-ubuntu-ppa-groovy.list \
+  && apt-get update \
+  && apt-get install -y git curl \
+  && curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash \
+  && apt-get install -y git-lfs \
+  && git lfs install \
+  && rm -rf /var/lib/apt/lists/*
 
 ARG user=jenkins
 ARG group=jenkins
@@ -46,10 +59,10 @@ RUN curl -fsSL https://github.com/krallin/tini/releases/download/${TINI_VERSION}
 
 # jenkins version being bundled in this docker image
 ARG JENKINS_VERSION
-ENV JENKINS_VERSION ${JENKINS_VERSION:-2.176.2}
+ENV JENKINS_VERSION ${JENKINS_VERSION:-2.235.4}
 
 # jenkins.war checksum, download will be validated using it
-ARG JENKINS_SHA=33a6c3161cf8de9c8729fd83914d781319fd1569acf487c7b1121681dba190a5
+ARG JENKINS_SHA=e5688a8f07cc3d79ba3afa3cab367d083dd90daab77cebd461ba8e83a1e3c177
 
 # Can be used to customize where jenkins.war get downloaded from
 ARG JENKINS_URL=https://repo.jenkins-ci.org/public/org/jenkins-ci/main/jenkins-war/${JENKINS_VERSION}/jenkins-war-${JENKINS_VERSION}.war
